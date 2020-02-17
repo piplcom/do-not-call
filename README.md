@@ -10,4 +10,4 @@ Generates a binary map file from raw do-not-call file downloaded from the Do Not
   2. The `run_do_not_call.sh` script from this project
   3. The raw input file as downloaded from the do-not-call registry `https://telemarketing.donotcall.gov/`
 4. Modify the `inputFileName` and the `doNotCallDate` arguments in run_do_not_call.sh script to match the input file name and the date
-5. Run the run_do_not_call.sh script from command-line. It will take about an hour to finish and generate the do-not-call._.<doNotCallDate> binary file.
+5. Run the run_do_not_call.sh script from command-line. It will take about an hour to finish and generate the `do-not-call._.<doNotCallDate>` binary file.
