@@ -87,7 +87,7 @@ public class DoNotCallGenerator {
   }
 
   private static void runCountMap(String inputTextFilePath, String outputBinaryFilePath) {
-    LOGGER.info("Started processing of {}", outputBinaryFilePath);
+    LOGGER.info("Started generation of {}", outputBinaryFilePath);
     try (ProbabilityMap probabilityMap = new ProbabilityMap(outputBinaryFilePath, 1, 0.0f)) {
       probabilityMap.loadDump(inputTextFilePath, false);
       probabilityMap.save();
