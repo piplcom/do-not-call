@@ -6,7 +6,7 @@
 
     <groupId>com.pipl</groupId>
     <artifactId>do-not-call</artifactId>
-    <version>0.0.1</version>
+    <version>1.0.0</version>
     <packaging>jar</packaging> <!-- run the maven LifeCycle target 'package' to create the jar file -->
     <name>doNotCallGen</name>
     <properties>

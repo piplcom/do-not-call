@@ -5,9 +5,15 @@ import org.slf4j.LoggerFactory;
 import pipl.pse.donotcallgen.services.ProbabilityMap;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.OpenOption;
+import java.nio.file.Paths;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DoNotCallGenerator {
   private static final Logger LOGGER = LoggerFactory.getLogger(DoNotCallGenerator.class);
@@ -15,23 +21,23 @@ public class DoNotCallGenerator {
   private static final String TEXT_FILE_NAME = DO_NOT_CALL + "_txt";
   private static final String EXTENSION_PREFIX = "._.";
   private static final NumberFormat FORMATTER = java.text.NumberFormat.getIntegerInstance();
+  public static final int INTERVAL = 1000000;
+  public static final int MILLIS_PER_SECOND = 1000;
 
   public static final String WORK_FOLDER_ARG = "workFolder";
   public static final String INPUT_FILE_NAME_ARG = "inputFileName";
   public static final String DO_NOT_CALL_DATE_ARG = "doNotCallDate";
-  public static final int INTERVAL = 1000000;
-  public static final int MILLIS_PER_SECOND = 1000;
 
   private static String WORK_FOLDER = ".";
   private static String RAW_DO_NOT_CALL_DOWNLOAD_FILE = "NO INPUT FILE"; // for example: "2020-2-6_Global_4B95655D-7BFA-4CCA-8949-E911404284EE.txt";
   private static String DO_NOT_CALL_DATE = "NO_DATE"; // for example: "2018_02_20";
   private static final String USAGE_EXAMPLE =
-      "Usage example: java -Xms25G -Xmx25G -jar DoNotCallGenerator.jar workFolder=. inputFileName=2020-2-6_Global_4B95655D-7BFA-4CCA-8949-E911404284EE.txt doNotCallDate=2018_02_20";
+      "Usage example: java -Xms30G -Xmx30G -jar do-not-call.jar workFolder=. inputFileName=2020-2-6_Global_4B95655D-7BFA-4CCA-8949-E911404284EE.txt doNotCallDate=2018_02_20";
 
   /**
    * Generates a binary map file from raw do-not-call file downloaded from the Do Not Call registry
    * <BR/><b>Usage example:</b><BR/>
-   *   java -Xms25G -Xmx25G -jar DoNotCallGenerator.jar workFolder=. inputFileName=2020-2-6_Global_4B95655D-7BFA-4CCA-8949-E911404284EE.txt doNotCallDate=2018_02_20
+   *   java -Xms30G -Xmx30G -jar do-not-call.jar workFolder=. inputFileName=2020-2-6_Global_4B95655D-7BFA-4CCA-8949-E911404284EE.txt doNotCallDate=2018_02_20
    * @param args workFolder, inputFileName, doNotCallDate
    * @throws IOException
    */
@@ -59,11 +65,10 @@ public class DoNotCallGenerator {
     String textFilePath = WORK_FOLDER + File.separator + TEXT_FILE_NAME;
     String binaryFilePath = WORK_FOLDER + File.separator + DO_NOT_CALL + EXTENSION_PREFIX + DO_NOT_CALL_DATE;
 
-    LOGGER.info("Processing lines...");
-    List<String> fileLines = readFileLines(rawInputTextFilePath).stream()
+    LOGGER.info("Reading input file " + rawInputTextFilePath);
+    Stream<String> fileLines = Files.lines(Paths.get(rawInputTextFilePath))
         .sorted()
-        .map(line -> line.replace(",", "") + ", 1")
-        .collect(Collectors.toList());
+        .map(line -> line.replace(",", "") + "\t1");
 
     appendLinesToFile(fileLines, textFilePath);
 
@@ -82,6 +87,7 @@ public class DoNotCallGenerator {
   }
 
   private static void runCountMap(String inputTextFilePath, String outputBinaryFilePath) {
+    LOGGER.info("Started processing of {}", outputBinaryFilePath);
     try (ProbabilityMap probabilityMap = new ProbabilityMap(outputBinaryFilePath, 1, 0.0f)) {
       probabilityMap.loadDump(inputTextFilePath, false);
       probabilityMap.save();
@@ -91,40 +97,23 @@ public class DoNotCallGenerator {
     }
   }
 
-  private static List<String> readFileLines(String filePath) throws IOException {
-    List<String> lines = new ArrayList<>();
-    LOGGER.info("Reading input file " + filePath);
-    try (FileReader fileReader = new FileReader(filePath);
-         BufferedReader bufferedReader = new BufferedReader(fileReader)) {
-      String line;
-      while ((line = bufferedReader.readLine()) != null) {
-        lines.add(line);
-        if (lines.size() % INTERVAL == 0) {
-          LOGGER.info(FORMATTER.format(lines.size()) + " lines read so far");
-        }
-      }
-    }
-    LOGGER.info("Done reading input file " + filePath);
-
-    return lines;
-  }
-
-  private static void appendLinesToFile(List<String> lines, String filePath) throws IOException {
+  private static void appendLinesToFile(Stream<String> lines, String filePath) throws IOException {
     LOGGER.info("Outputting lines to file " + filePath);
     File file = new File(filePath);
     file.createNewFile();
     try (FileWriter fw = new FileWriter(filePath, false);
          BufferedWriter bw = new BufferedWriter(fw);
          PrintWriter pw = new PrintWriter(bw)) {
-      int count = 0;
-      for (String line : lines) {
+      AtomicLong count = new AtomicLong(0);
+      lines.forEach(line -> {
         pw.println(line);
-        count++;
-        if (count % INTERVAL == 0) {
-          LOGGER.info(FORMATTER.format(lines.size()) + " lines written so far");
+        long currCount = count.incrementAndGet();
+        if (currCount % INTERVAL == 0) {
+          LOGGER.info(FORMATTER.format(currCount) + " lines written so far");
         }
-      }
-      LOGGER.info("Done writing lines, Now flushing buffers");
+      });
+
+      LOGGER.info("Done writing " + count.get() + " lines, Now flushing buffers");
       pw.flush();
       bw.flush();
       fw.flush();
