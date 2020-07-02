@@ -6,7 +6,7 @@
 
     <groupId>com.pipl</groupId>
     <artifactId>do-not-call</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging> <!-- run the maven LifeCycle target 'package' to create the jar file -->
     <name>doNotCallGen</name>
     <properties>
@@ -44,12 +44,6 @@
             <artifactId>junit</artifactId>
             <version>4.12</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>mysql</groupId>
-            <artifactId>mysql-connector-java</artifactId>
-            <version>5.1.37</version>
         </dependency>
 
     </dependencies>
